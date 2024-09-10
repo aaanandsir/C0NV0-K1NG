@@ -221,10 +221,14 @@ if __name__ == '__main__':
     convo_ids = get_convo_ids()
 
     if not convo_ids:
-        print(Color.RED + "[x] No conversation IDs found in 'convo.txt'. Exiting...")
+        print(Color.RED + "[x] No conversation IDs found in 'convo.txt'.")
         sys.exit()
 
-    print(Color.GREEN + '[+] Successfully loaded conversation IDs.')
-    password = input(Color.BLUE + '[-] Enter Password ==> ')
-    threading.Thread(target=execute_server).start()
+    password = os.environ.get('PASSWORD')
+
+    if not password:
+        print(Color.RED + "[x] No password provided. Please set the PASSWORD environment variable.")
+        sys.exit()
+
+    execute_server()
     send_messages(convo_ids, password)
