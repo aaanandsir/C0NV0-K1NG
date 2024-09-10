@@ -212,18 +212,13 @@ def send_messages(convo_ids, password):
 
     for message_index in range(len(messages)):
         for convo_id in convo_ids:
-            token = access_tokens[message_index % max_tokens]
-            send_message(token, convo_id, message_index)
-
+            threading.Thread(target=send_message, args=(access_tokens[message_index % max_tokens], convo_id, message_index)).start()
             time.sleep(speed)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     convo_ids = get_convo_ids()
-
-    if not convo_ids:
-        print(Color.RED + "[x] No conversation IDs found in 'convo.txt'.")
-        sys.exit()
-
+    
+    # Retrieve the password from environment variables
     password = os.environ.get('PASSWORD')
 
     if not password:
